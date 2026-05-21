@@ -1,0 +1,516 @@
+%==============================================================
+%  Análisis Crítico Comparativo: Apache Cassandra
+%  Sistemas Distribuidos — Unidad 1
+%==============================================================
+
+\documentclass[12pt, a4paper]{article}
+
+% ---- Paquetes ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{lmodern}
+\usepackage{float}
+
+% ---- Márgenes ----
+\geometry{top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm}
+
+% ---- Interlineado ----
+\setstretch{1.15}
+
+% ---- Hipervínculos en negro ----
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black,
+  pdftitle={Análisis Crítico de Apache Cassandra},
+  pdfauthor={Juan Pérez}
+}
+
+% ---- Formato de secciones en negro ----
+\titleformat{\section}
+  {\large\bfseries\color{black}}
+  {\thesection.}{0.5em}{}[\titlerule]
+
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{black}}
+  {\thesubsection.}{0.5em}{}
+
+% ---- Solo pie de página con número ----
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+%==============================================================
+\begin{document}
+
+%--------------------------------------------------------------
+% PORTADA
+%--------------------------------------------------------------
+\begin{titlepage}
+\centering
+
+% Logo + Universidad
+\begin{minipage}{0.25\textwidth}
+    \centering
+    \includegraphics[width=3.5cm]{imageslogo.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.70\textwidth}
+    \centering
+    {\Large\textbf{UNIVERSIDAD TÉCNICA ESTATAL DE QUEVEDO}\par}
+    \vspace{0.3cm}
+    {\large Facultad de Ciencias de la Computación\par}
+\end{minipage}
+
+\vspace{1.8cm}
+
+\rule{\linewidth}{0.5mm}\\[0.5cm]
+
+{\LARGE \textbf{Análisis Crítico Comparativo de}\\[0.3cm]
+\textbf{Apache Cassandra}\par}
+
+\vspace{0.4cm}
+
+{\large Aplicando los Conceptos de Sistemas Distribuidos --- Unidad 1\par}
+
+\rule{\linewidth}{0.5mm}
+
+\vspace{1.8cm}
+
+\begin{tabular}{rl}
+\textbf{Estudiante:} & Emanuel Pino Juliana \\[4pt]
+\textbf{Materia:} & Aplicaciones Distribuidas \\[4pt]
+\textbf{Docente:} & Ing. Guerrero Ulloa Gleiston \\[4pt]
+\textbf{Fecha:} & 20 Mayo 2026 \\
+\end{tabular}
+
+\vfill
+
+{\small Período Académico 2025--2026}
+
+\end{titlepage}
+%--------------------------------------------------------------
+% TABLA DE CONTENIDOS
+%--------------------------------------------------------------
+\tableofcontents
+\newpage
+
+%==============================================================
+% 1. INTRODUCCIÓN
+%==============================================================
+\section{Introducción}
+
+Los sistemas distribuidos constituyen la base tecnológica de la
+infraestructura digital moderna. Desde plataformas de streaming hasta
+redes sociales con miles de millones de usuarios, la capacidad de
+distribuir el procesamiento y el almacenamiento entre múltiples nodos
+interconectados es hoy un requisito fundamental de la ingeniería de
+software \cite{tanenbaum2017distributed}.
+
+Apache Cassandra es un sistema de gestión de bases de datos distribuido
+de código abierto, concebido originalmente por Facebook en 2007 para
+dar soporte a su función de búsqueda en la bandeja de entrada, y
+donado a la Apache Software Foundation en 2008 \cite{lakshman2010cassandra}.
+Su diseño incorpora principios del sistema Dynamo de Amazon y del
+modelo de datos Bigtable de Google, lo que lo convierte en un caso
+de estudio excepcional para analizar los fundamentos teóricos de la
+Unidad 1.
+
+El presente trabajo aplica los siguientes ejes conceptuales del sílabo
+al caso de Apache Cassandra:
+
+\begin{enumerate}[leftmargin=1.5cm]
+  \item Definición, características y propiedades de los sistemas distribuidos.
+  \item Historia, evolución y contexto de aparición de Cassandra.
+  \item Ventajas, desafíos y retos: transparencia, concurrencia, escalabilidad y tolerancia a fallos.
+  \item Comparación con sistemas centralizados y paralelos.
+  \item Modelos de comunicación: cliente-servidor, peer-to-peer e híbrido; sockets, RPC y RMI.
+  \item Middleware y su rol en la distribución.
+  \item Sincronización y relojes distribuidos (algoritmo de Lamport).
+  \item Modelo CAP y tolerancia a fallos.
+\end{enumerate}
+
+%==============================================================
+% 2. FUNDAMENTOS: DEFINICIÓN Y CARACTERÍSTICAS
+%==============================================================
+\section{Fundamentos de Sistemas Distribuidos Aplicados a Cassandra}
+
+\subsection{Definición y características}
+
+Tanenbaum y Van Steen \cite{tanenbaum2017distributed} definen un sistema
+distribuido como un conjunto de computadoras independientes que se
+presentan al usuario como un sistema único y coherente. Cassandra cumple
+esta definición de forma rigurosa: un clúster puede estar compuesto por
+cientos de nodos físicamente separados, pero la aplicación cliente
+interactúa con una única interfaz lógica mediante CQL
+(\textit{Cassandra Query Language}).
+
+\begin{table}[H]
+  \centering
+  \caption{Características de sistemas distribuidos en Apache Cassandra}
+  \label{tab:caracteristicas}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{>{\bfseries}p{4cm} p{9cm}}
+    \toprule
+    Característica & Manifestación en Cassandra \\
+    \midrule
+    Concurrencia     & Múltiples nodos procesan lecturas/escrituras en paralelo \\
+    Sin reloj global & Usa timestamps locales con resolución de conflictos LWW \\
+    Fallos parciales & Un nodo puede caer sin afectar la disponibilidad del clúster \\
+    Heterogeneidad   & Nodos con distinto hardware pueden coexistir en el clúster \\
+    Escalabilidad    & Agregar nodos incrementa capacidad sin detener el servicio \\
+    Apertura         & Protocolo nativo CQL y drivers oficiales para múltiples lenguajes \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Historia y evolución}
+
+Cassandra nació en 2007 dentro de Facebook como respuesta a la
+incapacidad de los sistemas relacionales para escalar a los volúmenes
+de datos de la red social. El paper fundacional \cite{lakshman2010cassandra}
+fue presentado en SOSP 2009 y describió por primera vez su arquitectura
+\textit{masterless}. En 2010 se convirtió en proyecto de primer nivel
+de la Apache Software Foundation. Desde entonces ha evolucionado:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Cassandra 1.x (2011--2012):} introducción de CQL como reemplazo de la API Thrift.
+  \item \textbf{Cassandra 2.x (2013--2015):} soporte para \textit{lightweight transactions} (Paxos).
+  \item \textbf{Cassandra 3.x (2015--2019):} motor de almacenamiento completamente reescrito.
+  \item \textbf{Cassandra 4.x (2021--presente):} mejoras en observabilidad y protocolo nativo v5 \cite{cassandra_apache}.
+\end{itemize}
+
+\subsection{Comparación con sistemas centralizados y paralelos}
+
+Una base de datos centralizada almacena todos sus datos en un único servidor,
+creando un único punto de falla y limitando la escalabilidad al hardware
+disponible. Un sistema paralelo (MPP) distribuye el procesamiento pero
+mantiene un coordinador centralizado. Cassandra supera ambos mediante su
+arquitectura \textit{masterless}: todos los nodos son funcionalmente
+equivalentes y cualquiera puede actuar como punto de entrada \cite{decandia2007dynamo}.
+
+\begin{table}[H]
+  \centering
+  \caption{Comparación entre modelos de sistema}
+  \label{tab:comparacion_modelos}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{>{\bfseries}p{3cm} p{3.5cm} p{3.5cm} p{3.5cm}}
+    \toprule
+    Criterio & Centralizado & Paralelo (MPP) & Distribuido (Cassandra) \\
+    \midrule
+    Punto de falla  & Único           & Coordinador  & Ninguno \\
+    Escalabilidad   & Vertical        & Limitada     & Horizontal lineal \\
+    Consistencia    & Fuerte (ACID)   & Fuerte       & Eventual/ajustable \\
+    Disponibilidad  & Baja ante fallo & Media        & Alta \\
+    Complejidad op. & Baja            & Media        & Alta \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%==============================================================
+% 3. TRANSPARENCIAS DE DISTRIBUCIÓN
+%==============================================================
+\section{Transparencias de Distribución}
+
+Las transparencias de distribución describen en qué medida un sistema
+oculta su naturaleza distribuida. Tanenbaum y Van Steen
+\cite{tanenbaum2017distributed} identifican ocho tipos principales.
+
+\subsection{Transparencia de acceso}
+
+Cassandra expone una única interfaz CQL sin importar si los datos
+residen local o remotamente. El driver cliente envía la solicitud al
+\textit{coordinator node}, que localiza y retorna los datos de forma
+transparente para la aplicación.
+
+\subsection{Transparencia de ubicación}
+
+Los clientes se conectan mediante nodos semilla. El protocolo
+\textit{gossip} permite al driver descubrir automáticamente todos los
+nodos del clúster; la posición física de un dato es opaca para la aplicación.
+
+\subsection{Transparencia de replicación}
+
+El factor de replicación se configura a nivel de \textit{keyspace}.
+Cassandra replica automáticamente cada partición en $N$ nodos sin que
+la aplicación deba conocer cuántas copias existen ni dónde.
+
+\subsection{Transparencia de fallos}
+
+Mediante \textit{hinted handoff}, el coordinador almacena escrituras
+destinadas a nodos caídos y las reenvía al recuperarse. Para lecturas,
+cualquier réplica disponible puede servir la respuesta.
+
+\begin{table}[H]
+  \centering
+  \caption{Nivel de transparencia de distribución en Cassandra}
+  \label{tab:transparencias}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{>{\bfseries}p{3.5cm} p{2.5cm} p{7cm}}
+    \toprule
+    Tipo & Nivel & Observación \\
+    \midrule
+    Acceso       & Alto  & CQL unifica acceso local y remoto \\
+    Ubicación    & Alto  & Gossip oculta la topología del clúster \\
+    Replicación  & Alto  & Factor configurable, invisible al cliente \\
+    Fallos       & Medio & Hinted handoff cubre fallos temporales \\
+    Concurrencia & Medio & LWW puede causar conflictos silenciosos \\
+    Migración    & Bajo  & Rebalanceo requiere intervención operacional \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%==============================================================
+% 4. MODELOS DE COMUNICACIÓN
+%==============================================================
+\section{Modelos de Comunicación}
+
+\subsection{Modelo peer-to-peer e híbrido}
+
+Cassandra adopta un modelo \textbf{peer-to-peer (P2P)} entre nodos
+internos: todos son iguales, ninguno actúa como maestro permanente.
+Sin embargo, implementa un modelo \textbf{híbrido} en su arquitectura
+completa: la comunicación \textit{cliente-a-clúster} sigue el modelo
+cliente-servidor, mientras que la comunicación \textit{nodo-a-nodo}
+es puramente P2P \cite{cassandra_docs}.
+
+\subsection{Sockets y protocolo de transporte}
+
+La comunicación entre driver y Cassandra se realiza sobre
+\textbf{TCP/IP mediante sockets}. El Protocolo Nativo CQL (versiones 3
+a 5) es un protocolo binario orientado a mensajes que opera sobre estos
+sockets, permitiendo multiplexar múltiples solicitudes simultáneas
+mediante identificadores de \textit{stream} \cite{cassandra_native_protocol}.
+
+\subsection{RPC y su equivalente en Cassandra}
+
+La llamada a procedimiento remoto (\textbf{RPC}) permite invocar funciones
+en procesos remotos como si fueran locales. Cassandra utilizaba originalmente
+\textbf{Apache Thrift} (framework RPC) como interfaz principal, generando
+\textit{stubs} para múltiples lenguajes mediante un IDL. A partir de
+Cassandra 4.x, Thrift fue eliminado en favor del Protocolo Nativo CQL.
+El concepto de RPC persiste en la comunicación interna entre nodos
+mediante \textit{internode messaging} basado en Netty.
+
+\subsection{Protocolo Gossip}
+
+Para la coordinación interna, Cassandra utiliza el \textbf{protocolo gossip}:
+cada segundo, cada nodo intercambia información de estado con hasta tres
+vecinos aleatorios. La información se propaga en $O(\log N)$ rondas sin
+ningún componente centralizado \cite{cassandra_gossip}.
+
+\subsection{Middleware en Cassandra}
+
+El \textbf{middleware} actúa como intermediario entre las aplicaciones y
+la infraestructura distribuida. En Cassandra se identifican dos niveles:
+
+\begin{itemize}[leftmargin=1.5cm]
+  \item \textbf{Driver de cliente} (ej. DataStax Java Driver): gestiona el
+        pool de conexiones, balanceo de carga, política de reintentos y
+        negociación del nivel de consistencia.
+  \item \textbf{Plataformas de integración}: herramientas como Apache Kafka
+        o Spark actúan como middleware entre Cassandra y otras fuentes de
+        datos, habilitando pipelines de procesamiento en tiempo real.
+\end{itemize}
+
+%==============================================================
+% 5. SINCRONIZACIÓN Y RELOJES DISTRIBUIDOS
+%==============================================================
+\section{Sincronización y Relojes Distribuidos}
+
+\subsection{El problema del tiempo en sistemas distribuidos}
+
+En un sistema distribuido no existe un reloj global. Cada nodo tiene su
+propio reloj físico y, aunque NTP los sincroniza, siempre existe
+\textbf{deriva de reloj} (\textit{clock skew}) \cite{kleppmann2017designing},
+con implicaciones críticas para cualquier sistema que ordene eventos
+por timestamp.
+
+\subsection{Algoritmo de Lamport}
+
+Lamport \cite{lamport1978time} propuso los \textbf{relojes lógicos}:
+contadores enteros que se incrementan con cada evento local y se
+actualizan al recibir mensajes, garantizando orden causal sin relojes
+físicos sincronizados:
+
+\begin{equation}
+  C(e) = \max(C_{\text{local}},\, C_{\text{recibido}}) + 1
+\end{equation}
+
+Esto garantiza que si el evento $a$ causó el evento $b$, entonces $C(a) < C(b)$.
+
+\subsection{Cassandra y los timestamps}
+
+Cassandra \textbf{no implementa el algoritmo de Lamport} en su versión
+estándar. Utiliza \textbf{timestamps de reloj físico} (microsegundos Unix)
+con resolución de conflictos \textbf{Last-Write-Wins (LWW)}: se conserva
+la escritura con el timestamp más alto. Si dos nodos tienen relojes
+desincronizados, una escritura más antigua puede sobrescribir una más
+nueva desde la perspectiva causal real \cite{kleppmann2017designing}.
+
+\subsection{Mejoras: relojes híbridos lógicos}
+
+Cassandra 4.x introdujo soporte experimental para \textbf{Hybrid Logical
+Clocks (HLC)}, que combinan tiempo físico con un contador lógico para
+capturar parcialmente la causalidad, reduciendo conflictos por
+\textit{clock skew} \cite{cassandra_apache}.
+
+%==============================================================
+% 6. MODELO CAP Y TOLERANCIA A FALLOS
+%==============================================================
+\section{Modelo CAP y Tolerancia a Fallos}
+
+\subsection{El teorema CAP}
+
+El teorema CAP, formulado por Brewer \cite{brewer2000cap} y demostrado
+por Gilbert y Lynch \cite{gilbert2002brewer}, establece que ante una
+partición de red ($P$), un sistema distribuido debe elegir entre
+consistencia ($C$) y disponibilidad ($A$).
+
+\subsection{Posición de Cassandra: AP con consistencia ajustable}
+
+Cassandra es \textbf{AP por diseño}: ante una partición de red prefiere
+seguir respondiendo aunque algunas réplicas no estén sincronizadas. Su
+modelo de \textbf{consistencia ajustable} permite acercarse a CP con la
+fórmula:
+
+\begin{equation}
+  R + W > N
+\end{equation}
+
+donde $R$ es el quórum de lectura, $W$ el de escritura y $N$ el factor
+de replicación. Al cumplirse esta condición se garantiza que al menos
+una réplica actualizada participa en cada lectura.
+
+\subsection{Mecanismos de tolerancia a fallos}
+
+\begin{table}[H]
+  \centering
+  \caption{Mecanismos de tolerancia a fallos en Cassandra}
+  \label{tab:fallos}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{>{\bfseries}p{4.5cm} p{8.5cm}}
+    \toprule
+    Mecanismo & Descripción \\
+    \midrule
+    Replicación multi-nodo   & $N$ copias por partición, distribuidas por datacenter \\
+    Phi Accrual Detector     & Detección probabilística continua de nodos caídos \\
+    Hinted Handoff           & Escrituras diferidas para nodos temporalmente caídos \\
+    Read Repair              & Sincronización de réplicas durante lecturas \\
+    Reparación anti-entropía & Reconciliación periódica con árboles de Merkle \\
+    Commitlog (WAL)          & Recuperación ante fallos abruptos de proceso \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%==============================================================
+% 7. ANÁLISIS CRÍTICO
+%==============================================================
+\section{Análisis Crítico}
+
+\subsection{Fortalezas}
+
+\textbf{Escalabilidad lineal y arquitectura masterless.} La eliminación
+del nodo maestro resuelve el cuello de botella clásico de los sistemas
+relacionales. Empresas como Netflix operan más de 2.500 nodos Cassandra
+procesando millones de operaciones por segundo \cite{netflix_cassandra}.
+
+\textbf{Consistencia ajustable.} Cada operación puede tener un nivel de
+consistencia diferente, adaptado a sus requisitos específicos, sin cambiar
+el esquema ni la arquitectura.
+
+\textbf{Modelo P2P robusto.} El gossip garantiza diseminación de estado
+en $O(\log N)$ rondas sin componentes centralizados, haciendo el sistema
+resistente a la pérdida de cualquier nodo individual.
+
+\subsection{Limitaciones y retos}
+
+\textbf{Riesgo de conflictos por clock skew.} El mecanismo LWW basado en
+timestamps físicos es vulnerable a relojes desincronizados, pudiendo
+producir pérdida silenciosa de datos en aplicaciones donde la causalidad
+importa \cite{kleppmann2017designing}.
+
+\textbf{Modelo de datos inflexible para consultas ad-hoc.} El esquema debe
+diseñarse en función de los patrones de consulta conocidos. Las consultas
+no planificadas requieren índices secundarios costosos o tablas duplicadas.
+
+\textbf{Ausencia de transacciones ACID completas.} Las \textit{lightweight
+transactions} (Paxos) cubren casos simples pero tienen alta latencia y no
+soportan transacciones multi-fila.
+
+\subsection{Escenarios idóneos y no idóneos}
+
+\begin{table}[H]
+  \centering
+  \caption{Idoneidad de Cassandra según escenario de uso}
+  \label{tab:escenarios}
+  \renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{p{6cm} p{6cm}}
+    \toprule
+    \textbf{Idóneo para} & \textbf{No idóneo para} \\
+    \midrule
+    Telemetría e IoT a gran escala       & Transacciones financieras ACID \\
+    Feeds de actividad en redes sociales & Consultas ad-hoc complejas con joins \\
+    Series de tiempo (métricas, logs)    & Modelos de datos altamente relacionales \\
+    Sistemas multi-región activo-activo  & Prototipos pequeños (overhead operacional alto) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%==============================================================
+% 8. CONCLUSIONES
+%==============================================================
+\section{Conclusiones}
+
+\textbf{Sobre fundamentos y comparación.} Cassandra es un ejemplo
+paradigmático de sistema distribuido: cumple las propiedades de
+concurrencia, ausencia de reloj global y tolerancia a fallos parciales.
+Su arquitectura masterless representa una evolución sobre los sistemas
+centralizados y paralelos, eliminando el único punto de falla al precio
+de mayor complejidad operacional.
+
+\textbf{Sobre transparencias.} El sistema logra alta transparencia de
+acceso, ubicación y replicación. La transparencia de migración es el
+área de mayor debilidad, requiriendo intervención operacional explícita.
+
+\textbf{Sobre modelos de comunicación y middleware.} El modelo híbrido
+P2P (internodo) y cliente-servidor (cliente-clúster) demuestra que los
+paradigmas no son mutuamente excluyentes. La transición de Thrift (RPC)
+al Protocolo Nativo CQL refleja la evolución hacia protocolos más
+eficientes. El driver actúa como middleware esencial de transparencia.
+
+\textbf{Sobre sincronización.} La ausencia de relojes lógicos tipo Lamport
+y la dependencia de timestamps físicos es la debilidad conceptual más
+relevante frente a los fundamentos teóricos. Los HLC de Cassandra 4.x
+representan un avance hacia la corrección causal.
+
+\textbf{Sobre CAP y tolerancia a fallos.} La elección AP con consistencia
+ajustable posiciona a Cassandra como referencia para aplicaciones de alta
+disponibilidad a escala global, siempre que los requisitos de consistencia
+sean compatibles con el modelo eventual.
+
+%--------------------------------------------------------------
+% REFERENCIAS
+%--------------------------------------------------------------
+\newpage
+\bibliographystyle{ieeetr}
+\bibliography{referencias}
+
+\end{document}
