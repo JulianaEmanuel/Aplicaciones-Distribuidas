@@ -1,0 +1,130 @@
+\documentclass[12pt,a4paper]{article}
+
+% Paquetes
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+% Sin encabezado
+\pagestyle{plain}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+% Formato de secciones
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+
+\begin{document}
+
+% =========================================================
+%  PORTADA
+% =========================================================
+\begin{center}
+    {\LARGE \textbf{FORM-IC-01}}\\[0.4em]
+    {\large Investigación Individual}\\[0.3em]
+    {\large \textbf{Arquitecturas Distribuidas en la Industria}}\\[1.2em]
+
+    \begin{tabular}{ll}
+        \textbf{Alumna:}  & Juliana Emanuel Pino \\
+        \textbf{Carrera:} & 7to Software \\
+    \end{tabular}
+\end{center}
+
+\vspace{0.6em}
+\hrule
+\vspace{1em}
+
+% =========================================================
+%  1. DESCRIPCIÓN DEL CASO
+% =========================================================
+\section{Descripción del Caso: Netflix y su Migración a Microservicios}
+
+Netflix es una de las plataformas de \textit{streaming} más grandes del mundo, con más de 260 millones de suscriptores activos en más de 190 países \cite{netflix2023}. Hasta 2008, operaba con una arquitectura monolítica hospedada en centros de datos propios. Una falla crítica en su base de datos relacional ese año dejó el servicio inoperante por varios días, lo que motivó a la empresa a repensar completamente su infraestructura.
+
+Entre 2009 y 2016, Netflix llevó a cabo una migración total hacia una arquitectura basada en microservicios sobre la nube de Amazon Web Services (AWS). Cada capacidad del sistema ---catálogo de contenido, autenticación, recomendaciones, facturación, gestión de perfiles, codificación de video--- fue desacoplada en un servicio independiente con su propia base de datos, ciclo de despliegue y equipo dedicado \cite{fowler2014}.
+
+% =========================================================
+%  2. POR QUÉ ELIGIERON MICROSERVICIOS
+% =========================================================
+\section{¿Por Qué Eligieron la Arquitectura de Microservicios?}
+
+Los principales factores que impulsaron la decisión fueron:
+
+\begin{itemize}
+    \item \textbf{Escalabilidad granular:} el tráfico de Netflix tiene picos muy pronunciados (estrenos nocturnos, fines de semana). Con microservicios, solo se escalan los servicios bajo demanda (ej.\ codificación de video) sin escalar toda la aplicación.
+    \item \textbf{Independencia de despliegue:} los equipos pueden lanzar nuevas versiones de un servicio sin coordinar con el resto, alcanzando cientos de despliegues diarios.
+    \item \textbf{Resiliencia mediante aislamiento de fallos:} si el servicio de recomendaciones falla, el usuario puede seguir reproduciendo contenido, pues el motor de \textit{streaming} es un servicio separado.
+    \item \textbf{Autonomía tecnológica:} cada equipo puede elegir el lenguaje o motor de base de datos más adecuado para su dominio.
+\end{itemize}
+
+% =========================================================
+%  3. BENEFICIOS OBTENIDOS
+% =========================================================
+\section{Beneficios Obtenidos}
+
+La transición le reportó a Netflix mejoras medibles y sostenibles:
+
+\begin{itemize}
+    \item \textbf{Alta disponibilidad:} Netflix alcanzó un \textit{uptime} superior al 99,99\%, eliminando las ventanas de mantenimiento que paralizaban el sistema monolítico.
+    \item \textbf{Velocidad de entrega:} redujo el ciclo de despliegue de semanas a minutos, habilitando integración y entrega continuas (CI/CD).
+    \item \textbf{Innovación acelerada:} la independencia de servicios permitió experimentar con algoritmos de recomendación sin riesgo para el núcleo del sistema.
+    \item \textbf{Reducción de costos operativos:} al escalar solo los componentes necesarios, se optimizó significativamente el uso de infraestructura en la nube \cite{netflix2023}.
+\end{itemize}
+
+% =========================================================
+%  4. DESAFÍOS ENCONTRADOS
+% =========================================================
+\section{Desafíos Encontrados}
+
+La migración también implicó retos importantes que Netflix debió resolver:
+
+\begin{itemize}
+    \item \textbf{Complejidad operacional:} gestionar cientos de servicios independientes requirió crear herramientas propias como Eureka (registro de servicios) e Hystrix (circuit breaker), que luego liberó como código abierto.
+    \item \textbf{Consistencia de datos distribuidos:} garantizar la coherencia entre servicios que tienen bases de datos propias exigió adoptar el modelo de consistencia eventual y patrones como Saga.
+    \item \textbf{Latencia en comunicaciones:} las llamadas entre servicios introducen latencia de red. Netflix debió implementar cachés distribuidas (EVCache) y optimizar sus APIs internas.
+    \item \textbf{Observabilidad:} depurar un error que atraviesa veinte servicios es mucho más difícil que en un monolito; requirió invertir en trazas distribuidas y dashboards unificados.
+\end{itemize}
+
+% =========================================================
+%  5. APLICACIÓN AL PROYECTO PROPIO
+% =========================================================
+\section{Aplicación al Proyecto: SGA-Soporte (UTEQ)}
+
+El proyecto \textit{sga-soporte} desarrollado para el Sistema de Gestión Académica de la Universidad Técnica de Machala sigue directamente el patrón de microservicios que Netflix adoptó. Se trata de un microservicio independiente implementado en Spring Boot (puerto 8081) que expone una API REST para la gestión de tickets de soporte técnico, desacoplado del módulo principal sga-principal.
+
+Al igual que Netflix separa su motor de streaming de sus recomendaciones, \textit{sga-soporte} separa la lógica de soporte ---tickets, comentarios, estadísticas, notificaciones por correo--- del núcleo académico (matrículas, calificaciones). Ambos módulos comparten la misma base de datos PostgreSQL pero operan en esquemas independientes (\texttt{soporte} vs.\ \texttt{public}), y se comunican mediante tokens JWT compartidos, replicando el patrón de autenticación distribuida utilizado por Netflix con su servicio de identidad.
+
+Los desafíos identificados en Netflix también son aplicables al proyecto: si el microservicio de soporte queda inactivo, el flujo académico principal no se ve interrumpido, lo que valida la resiliencia por aislamiento. Como mejora futura, se podría incorporar un \textit{circuit breaker} con Resilience4j y un API Gateway (Spring Cloud Gateway) que centralice el enrutamiento, tal como lo hace Netflix con su capa de Zuul/Envoy.
+
+% =========================================================
+%  REFERENCIAS
+% =========================================================
+\begin{thebibliography}{9}
+
+\bibitem{fowler2014}
+    Lewis, J. y Fowler, M. (2014).
+    \textit{Microservices: a definition of this new architectural term}.
+    martinfowler.com.
+    Recuperado de \url{https://martinfowler.com/articles/microservices.html}
+
+\bibitem{netflix2023}
+    Mauro, T. (2015).
+    \textit{Adopting Microservices at Netflix: Lessons for Architectural Design}.
+    NGINX Blog.
+    Recuperado de \url{https://www.nginx.com/blog/microservices-at-netflix-architectural-best-practices/}
+
+\end{thebibliography}
+
+\end{document}
